@@ -143,5 +143,3 @@ def makeNoisyImages(path):
     # Add Poisson Noise to the image using addPoissonNoise function
     poisson_img = addPoissonNoise(img)
     cv2.imwrite('poisson.png', poisson_img)
-
-makeNoisyImages('data/00006632_004.png')

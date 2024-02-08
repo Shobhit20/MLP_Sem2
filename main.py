@@ -17,7 +17,7 @@ model = AutoencoderWithoutSkip()
 
 data_dir = 'data/'
 batch_size = 32
-train_loader, test_loader = loadData(data_dir, batch_size, color='gray')
+train_loader, test_loader = loadData(data_dir, batch_size, color='color')
 print('Data Loading Complete!')
 
 # Move the model to GPU
@@ -50,8 +50,8 @@ if to_train:
 	torch.save(model.state_dict(), 'conv_autoencoder_without.pth')
 
 # Load the model and test the autoencoder on test set
-model = AutoencoderWithoutSkip()
-model.load_state_dict(torch.load('conv_autoencoder_without.pth'))
+model = Autoencoder()
+model.load_state_dict(torch.load('conv_autoencoder.pth'))
 model.to(device)
 print('Data Loaded')
 
