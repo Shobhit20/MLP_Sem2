@@ -9,7 +9,6 @@ import torch.optim as optim
 import torchvision.transforms.functional as TF
 
 from utils import *
-from SkiD import *
 from AutoEncShallow import *
 
 # Initialize the autoencoder
