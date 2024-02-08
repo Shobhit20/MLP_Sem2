@@ -112,7 +112,8 @@ class AutoencoderWithoutSkip(nn.Module):
 	
     def generate_images(self, model, dataloader, n, device='cpu'):
         model.eval()
-        images = []
+        original_images = []
+        generated_images = []
         random_indices = random.sample(range(dataloader.batch_size), n)
 
         with torch.no_grad():
@@ -121,18 +122,16 @@ class AutoencoderWithoutSkip(nn.Module):
                     img, _ = data
                     img = img.to(device)
                     output = model(img)
-                    images.append(output[0].cpu())
+                    original_images.append(img[0])
+                    generated_images.append(output[0])
         print(f'Sample Images Selected {random_indices}')
 
         fig, axes = plt.subplots(2, n, figsize=(3 * n, 8))
         for i in range(n):
-            # For Colour Images
-            # input_image = dataloader.dataset[random_indices[i]][0].cpu().permute(1, 2, 0)
-            # output_image = images[i].squeeze().permute(1, 2, 0)
 
             # For Grayscale Images (Single Channel)
-            input_image = dataloader.dataset[random_indices[i]][0].cpu().squeeze().numpy()
-            output_image = images[i].squeeze().numpy()
+            input_image = original_images[i].cpu().squeeze().numpy()
+            output_image = generated_images[i].cpu().squeeze().numpy()
 
             # axes[0, i].imshow(input_image) # For Colour Images
             axes[0, i].imshow(input_image, cmap = 'gray')
@@ -145,35 +144,38 @@ class AutoencoderWithoutSkip(nn.Module):
             axes[1, i].axis('off')
 
         plt.show()
-        return images
+        return generated_images
 	
     def create_output(self, model, input_image, device='cpu'):
         model.eval()
         with torch.no_grad():
             input_image = input_image.to(device)
-            output = model(input_image)
+            output = model(input_image.unsqueeze(1))
 
-        input_image_pil = TF.to_pil_image(input_image.cpu().squeeze())
-        output_image_pil = TF.to_pil_image(output.cpu().squeeze())
+        # input_image_pil = TF.to_pil_image(input_image.cpu().squeeze())
+        # output_image_pil = TF.to_pil_image(output.cpu().squeeze())
+
+        input_image = input_image.cpu().squeeze().numpy()
+        output_image = output.cpu().squeeze().numpy()
 
         # Display input and output images side by side
         fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
-        axes[0].imshow(input_image_pil)
+        axes[0].imshow(input_image)
         axes[0].set_title('Input Image'); axes[0].axis('off')
 
-        axes[1].imshow(output_image_pil)
+        axes[1].imshow(output_image)
         axes[1].set_title('Output Image'); axes[1].axis('off')
         plt.show()
 
         return 0
     
 # Random Testing
-model = AutoencoderWithoutSkip()
-dummy_input = torch.randn(1, 1, 256, 256)  # Batch size 1, 3 channels, 256x256 size
+# model = AutoencoderWithoutSkip()
+# dummy_input = torch.randn(1, 1, 256, 256)  # Batch size 1, 3 channels, 256x256 size
 
-# Pass the input through the model to get the output
-output = model(dummy_input)
+# # Pass the input through the model to get the output
+# output = model(dummy_input)
 
-# Check shape of output
-print(output.shape)
+# # Check shape of output
+# print(output.shape)

@@ -9,14 +9,15 @@ import torch.optim as optim
 import torchvision.transforms.functional as TF
 
 from utils import *
-from models import *
+from SkiD import *
+from AutoEncShallow import *
 
 # Initialize the autoencoder
 model = AutoencoderWithoutSkip()
 
 data_dir = 'data/'
-batch_size = 16
-train_loader, test_loader = loadData(data_dir, batch_size)
+batch_size = 32
+train_loader, test_loader = loadData(data_dir, batch_size, color='gray')
 print('Data Loading Complete!')
 
 # Move the model to GPU
@@ -59,10 +60,10 @@ print('Data Loaded')
 # print(f'Test loss: {test_loss:.4f}')
 
 # Generate output images
-n = 5
+n = 4
 output_images = model.generate_images(model, test_loader, n, device)
 print('Images Generated')
 
 # Create output images
-# input_image = next(iter(test_loader))[0][0]
+# input_image = next(iter(test_loader))[0][19]
 # model.create_output(model, input_image, device)

@@ -17,10 +17,11 @@ import os
 from sklearn.model_selection import train_test_split
 
 class AutoencoderDataset(Dataset):
-    def __init__(self, data, device='cpu', transform=None):
+    def __init__(self, data, device='cpu', color='gray', transform=None):
         self.data = data
         self.transform = transform
         self.device = device
+        self.color = color
 
     def __len__(self):
         return len(self.data)
@@ -28,11 +29,13 @@ class AutoencoderDataset(Dataset):
     def __getitem__(self, index):
         x = Image.open(self.data[index])
 
-        # if x.mode != 'RGB':
-        #     x = x.convert('RGB')
-
-        # For Grayscale
-        x = x.convert('L')
+        if self.color == 'color':
+            if x.mode != 'RGB':
+                x = x.convert('RGB')
+        elif self.color == 'gray':
+            x = x.convert('L')
+        else:
+            raise ValueError('Invalid color type. Please use either "color" or "gray"')
 
         if self.transform:
             x = self.transform(x)
@@ -40,11 +43,11 @@ class AutoencoderDataset(Dataset):
 
         return x.to(self.device), x.to(self.device)
 
-def loadData(data_dir, batch_size, test_size=0.2):
+def loadData(data_dir, batch_size, test_size=0.2, color='gray'):
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.456], std=[0.229])
+        # transforms.Normalize(mean=[0.456], std=[0.229])
     ])
 
     data = []
@@ -55,11 +58,11 @@ def loadData(data_dir, batch_size, test_size=0.2):
     data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
 
     device = getDevice()
-    train_dataset = AutoencoderDataset(data_train, transform=transform, device=device)
-    test_dataset = AutoencoderDataset(data_test, transform=transform, device=device)
+    train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform)
+    test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=0)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=0)
 
     return train_loader, test_loader
 
