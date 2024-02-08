@@ -13,7 +13,7 @@ from SkiD import *
 from AutoEncShallow import *
 
 # Initialize the autoencoder
-model = AutoencoderWithoutSkip()
+model = Autoencoder()
 
 data_dir = 'data/'
 batch_size = 32
@@ -29,7 +29,7 @@ model.to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-# Train the autoencoder
+# Training the autoencoder
 to_train = 0
 num_epochs = 10
 if to_train:
@@ -56,14 +56,14 @@ model.to(device)
 print('Data Loaded')
 
 # Evaluate the model
-# test_loss = model.evaluate_model(model, test_loader, device)
-# print(f'Test loss: {test_loss:.4f}')
+test_loss = model.evaluate_model(model, test_loader, device)
+print(f'Test loss: {test_loss:.4f}')
 
-# Generate output images
+# Generate output for random images
 n = 4
 output_images = model.generate_images(model, test_loader, n, device)
 print('Images Generated')
 
-# Create output images
-# input_image = next(iter(test_loader))[0][19]
-# model.create_output(model, input_image, device)
+# Create specific output images
+input_image = next(iter(test_loader))[0][19]
+model.create_output(model, input_image, device)
