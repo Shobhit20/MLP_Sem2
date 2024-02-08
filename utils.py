@@ -1,19 +1,14 @@
 import os
 import numpy as np
-import torch
 from PIL import Image
-from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
-import torchvision.utils as vutils
-from sklearn.model_selection import train_test_split
-
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from torch.utils.data import Dataset, DataLoader
+import torch
 from torchvision import transforms
-from PIL import Image
-import os
+from torch.utils.data import Dataset, DataLoader
+import torchvision.utils as vutils
 from sklearn.model_selection import train_test_split
 
 class AutoencoderDataset(Dataset):
@@ -95,32 +90,58 @@ def accuracy(model, data_loader):
 
     return correct / total
 
-def addGaussianNoise(image, mean=0, std=1):
+def addGaussianNoise(image, mean=0, std=25):
     noise = np.random.normal(mean, std, image.shape)
     image_noisy = image + noise
-    image_noisy = np.clip(image_noisy, 0., 1.)
+    image_noisy = np.clip(image_noisy, 0, 255)
     return image_noisy
 
-def addSaltPepperNoise(image, salt_vs_pepper=0.5, amount=0.04):
-    image_sp = np.copy(image)
-    num_salt = np.ceil(amount * image.size * salt_vs_pepper)
-    coords = [np.random.randint(0, i - 1, int(num_salt)) for i in image.shape]
-    image_sp[coords] = 1
+def addSaltPepperNoise(image, salt_prob = 0.08, pepper_prob = 0.08):
+    noisy_image = np.copy(image)
 
-    num_pepper = np.ceil(amount * image.size * (1. - salt_vs_pepper))
-    coords = [np.random.randint(0, i - 1, int(num_pepper)) for i in image.shape]
-    image_sp[coords] = 0
-    return image_sp
+    # Add salt noise
+    salt_mask = np.random.rand(*image.shape[:2]) < salt_prob
+    noisy_image[salt_mask] = 255
 
-def addPoissonNoise(image):
-    vals = len(np.unique(image))
-    vals = 2 ** np.ceil(np.log2(vals))
-    noisy = np.random.poisson(image * vals) / float(vals)
-    return noisy
+    # Add pepper noise
+    pepper_mask = np.random.rand(*image.shape[:2]) < pepper_prob
+    noisy_image[pepper_mask] = 0
 
-def addSpeckleNoise(image):
+    return noisy_image
+
+def addPoissonNoise(image, intensity = 0.1):
+    poisson_noise = intensity * np.random.poisson(image / intensity)
+    noisy_image = np.clip(image + poisson_noise, 0, 255).astype(np.uint8)
+    return noisy_image
+
+def addSpeckleNoise(image, scale = 0.4):
+    # Generate speckle noise
     row, col, ch = image.shape
-    gauss = np.random.randn(row, col, ch)
-    gauss = gauss.reshape(row, col, ch)
-    noisy = image + image * gauss
-    return noisy
+    speckle_noise = scale * np.random.randn(row, col, ch)
+
+    # Add noise to the image
+    noisy_image = image + image * speckle_noise
+
+    # Clip values to ensure they are within the valid range [0, 255]
+    noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+
+    return noisy_image
+
+def makeNoisyImages(path):
+    # Read an image from data folder
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (256, 256))
+
+    # Add Gaussian Noise to the image using addGaussianNoise function
+    gaussian_img = addGaussianNoise(img, mean = 1)
+    cv2.imwrite('gaussian.png', gaussian_img)
+
+    # Add Salt and Pepper noise to the image using addSaltPepperNoise function
+    sap_img = addSaltPepperNoise(img)
+    cv2.imwrite('sap.png', sap_img)
+
+    # Add Poisson Noise to the image using addPoissonNoise function
+    poisson_img = addPoissonNoise(img)
+    cv2.imwrite('poisson.png', poisson_img)
+
+makeNoisyImages('data/00006632_004.png')
