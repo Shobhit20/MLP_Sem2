@@ -119,6 +119,9 @@ def getDevice():
     '''Returns the device to be used in case of availability of the GPU'''
     return torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
+# ----------------------------------------------------------------------- #
+#                         Numpy Image Manipulation                        #
+# ----------------------------------------------------------------------- #
 def addGaussianNoise(image, mean=0, std=25):
     '''
     Adds Gaussian Noise to the given image
@@ -195,6 +198,84 @@ def addSpeckleNoise(image, scale = 0.4):
 
     # Clip values to ensure they are within the valid range [0, 255]
     noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+
+    return noisy_image
+
+# ----------------------------------------------------------------------- #
+#                        Tensor Image Manipulation                        #
+# ----------------------------------------------------------------------- #
+def addGaussianNoiseTensor(image, mean = 0, std = 25):
+    '''
+    Adds Gaussian Noise to the given tensor image
+
+    Args:
+        image: the tensor image to add noise to
+        mean: the mean of the Gaussian distribution
+        std: the standard deviation of the Gaussian distribution
+    
+    Returns:
+        image_noisy: the noisy tensor image
+    '''
+    noise = torch.randn_like(image) * std + mean
+    image_noisy = image + noise
+    image_noisy = torch.clamp(image_noisy, 0, 255)
+    return image_noisy
+
+def addSaltPepperNoiseTensor(image, salt_prob=0.08, pepper_prob=0.08):
+    '''
+    Adds Salt and Pepper Noise to the given tensor image
+
+    Args:
+        image: the tensor image to add noise to
+        salt_prob: the probability of adding salt noise
+        pepper_prob: the probability of adding pepper noise
+    
+    Returns:
+        noisy_image: the noisy tensor image
+    '''
+    noisy_image = image.clone()
+
+    # Add salt noise
+    salt_mask = torch.rand_like(image) < salt_prob
+    noisy_image[salt_mask] = 1.0
+
+    # Add pepper noise
+    pepper_mask = torch.rand_like(image) < pepper_prob
+    noisy_image[pepper_mask] = 0.0
+
+    return noisy_image
+
+def addPoissonNoiseTensor(image, intensity=0.1):
+    '''
+    Adds Poisson Noise to the given tensor image
+
+    Args:
+        image: the tensor image to add noise to
+        intensity: the intensity of the noise
+    
+    Returns:
+        noisy_image: the noisy tensor image
+    '''
+    poisson_noise = intensity * torch.rand_like(image)
+    noisy_image = torch.clamp(image + poisson_noise, 0, 255)
+    return noisy_image
+
+def addSpeckleNoiseTensor(image, scale=0.4):
+    ''' 
+    Adds Speckle Noise to the given tensor image
+
+    Args:
+        image: the tensor image to add noise to
+        scale: the scale of the noise
+
+    Returns:
+        noisy_image: the noisy tensor image
+    '''
+    speckle_noise = scale * torch.randn_like(image)
+    noisy_image = image + image * speckle_noise
+
+    # Clip values to ensure they are within the valid range [0, 255]
+    noisy_image = torch.clamp(noisy_image, 0, 255)
 
     return noisy_image
 
