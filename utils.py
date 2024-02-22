@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 class AutoencoderDataset(Dataset):
     '''Class defining the dataset for the autoencoder'''
 
-    def __init__(self, data, device='cpu', color='gray', transform=None):
+    def __init__(self, data, device='cpu', color='gray', transform=None, transform_noise=None):
         '''
         Constructor for the AutoencoderDataset class
 
@@ -28,6 +28,7 @@ class AutoencoderDataset(Dataset):
         self.transform = transform
         self.device = device
         self.color = color
+        self.transform_noise = transform_noise
 
     def __len__(self):
         '''Returns the length of the dataset'''
@@ -55,11 +56,14 @@ class AutoencoderDataset(Dataset):
 
         if self.transform:
             x = self.transform(x)
-        # x = transforms.ToTensor()(x)
+
+        if self.transform_noise:
+            new_x = self.transform_noise(x)
+            return new_x.to(self.device), x.to(self.device)
 
         return x.to(self.device), x.to(self.device)
 
-def loadData(data_dir, batch_size, test_size=0.2, color='gray'):
+def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     '''
     Loads the data from the given directory and returns the train and test loaders
 
@@ -73,11 +77,24 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray'):
         train_loader: the data loader for the training set
         test_loader: the data loader for the test set
     '''
+    gaussian_noise = transforms.Lambda(lambda x: addGaussianNoiseTensor(x, mean = 0.1, std = 0.05))
+    sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.06, pepper_prob = 0.06))
+    poisson_noise = transforms.Lambda(lambda x: addPoissonNoiseTensor(x, intensity=0.05))
+    speckle_noise = transforms.Lambda(lambda x: addSpeckleNoiseTensor(x, scale=0.4))
+
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.456], std=[0.229])
     ])
+    
+    if noise:
+        transform_noise = transforms.Compose([
+            transforms.RandomApply([gaussian_noise], p = 0.4),
+            transforms.RandomApply([sap_noise], p = 0.4),
+            transforms.RandomApply([poisson_noise], p = 0.4)
+        ])
+    else: transform_noise = None
 
     data = []
     for image_name in os.listdir(data_dir):
@@ -87,8 +104,8 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray'):
     data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
 
     device = getDevice()
-    train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform)
-    test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform)
+    train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform, transform_noise=transform_noise)
+    test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform, transform_noise=transform_noise)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=0)
@@ -107,12 +124,20 @@ def showImages(dataloader, num_images=5):
         None
     '''
     data_iter = iter(dataloader)
-    images, _ = next(data_iter)
+    images, labels = next(data_iter)
 
-    plt.figure(figsize=(15, 5))
-    plt.axis("off")
-    plt.title("Sample Images from DataLoader")
-    plt.imshow(np.transpose(vutils.make_grid(images[:num_images], padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.figure(figsize=(15, 4))
+    for i in range(num_images):
+        plt.subplot(2, num_images, i + 1)
+        plt.axis("off")
+        plt.title("Input {}".format(i + 1))
+        plt.imshow(np.transpose(vutils.make_grid(images[i], padding=5, normalize=True).cpu(), (1, 2, 0)))
+
+        plt.subplot(2, num_images, i + 1 + num_images)
+        plt.axis("off")
+        plt.title("Output {}".format(i + 1))
+        plt.imshow(np.transpose(vutils.make_grid(labels[i], padding=5, normalize=True).cpu(), (1, 2, 0)))
+
     plt.show()
 
 def getDevice():

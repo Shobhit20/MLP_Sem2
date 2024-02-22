@@ -10,14 +10,16 @@ import torchvision.transforms.functional as TF
 
 from utils import *
 from AutoEncShallow import *
+from SkiD import *
 
 # Initialize the autoencoder
 model = Autoencoder()
 
 data_dir = 'data/'
 batch_size = 32
-train_loader, test_loader = loadData(data_dir, batch_size, color='color')
+train_loader, test_loader = loadData(data_dir, batch_size, color='color', noise=True)
 print('Data Loading Complete!')
+showImages(train_loader, 5)
 
 # Move the model to GPU
 device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
@@ -29,8 +31,8 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # Training the autoencoder
-to_train = 0
-num_epochs = 10
+to_train = 1
+num_epochs = 1
 if to_train:
 	start = time.time()
 	for epoch in range(num_epochs):
@@ -46,11 +48,11 @@ if to_train:
 		print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, loss.item()))
 
 	# Save the model
-	torch.save(model.state_dict(), 'conv_autoencoder_without.pth')
+	torch.save(model.state_dict(), 'conv_autoencoder_without_noise.pth')
 
 # Load the model and test the autoencoder on test set
 model = Autoencoder()
-model.load_state_dict(torch.load('conv_autoencoder.pth'))
+model.load_state_dict(torch.load('conv_autoencoder_without_noise.pth'))
 model.to(device)
 print('Data Loaded')
 
@@ -64,5 +66,5 @@ output_images = model.generate_images(model, test_loader, n, device)
 print('Images Generated')
 
 # Create specific output images
-input_image = next(iter(test_loader))[0][19]
-model.create_output(model, input_image, device)
+# input_image = next(iter(test_loader))[0][19]
+# model.create_output(model, input_image, device)
