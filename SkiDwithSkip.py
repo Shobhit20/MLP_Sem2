@@ -39,39 +39,58 @@ import torch.nn as nn
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
-        
+        self.relu = nn.ReLU(inplace=True)
         # ------------------------------- Encoder ------------------------------- #
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.Conv2d(3, 32, 3, padding=1), 
+            nn.BatchNorm2d(32), 
+            nn.Conv2d(32, 64, 3, padding=1), 
+            nn.BatchNorm2d(64), 
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32), 
             nn.MaxPool2d(2, 2),
-
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1), 
+            nn.BatchNorm2d(64), 
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32), 
             nn.MaxPool2d(2, 2),
-
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32),
             nn.MaxPool2d(2, 2)
         )
-        
+        self.mediator = nn.Conv2d(32, 32, 3, padding=1)
+
         # ------------------------------- Decoder ------------------------------- #
         self.decoder = nn.Sequential(
-            nn.Conv2d(32, 32, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Upsample(scale_factor=2, align_corners=True),
+            nn.Upsample(scale_factor=2),
+            # major block 1
+            # minor block 1
+            nn.Conv2d(32, 64, 3, padding=1), 
+            nn.BatchNorm2d(64),
+            # minor block 2
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32),
+            nn.Upsample(scale_factor=2),
+            
+            # major block 2
+            # minor block 1
+            nn.Conv2d(32, 64, 3, padding=1), 
+            nn.BatchNorm2d(64),
+            # minor block 2
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32), 
+            nn.Upsample(scale_factor=2),
 
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
-            nn.Upsample(scale_factor=2, align_corners=True),
-
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
-            nn.Upsample(scale_factor=2, align_corners=True),
-
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
-            nn.Conv2d(64, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
-            nn.Conv2d(32, 1, 7, padding=1)
+            # major block 3
+            # minor block 1
+            nn.Conv2d(32, 64, 3, padding=1), 
+            nn.BatchNorm2d(64),
+            # minor block 2
+            nn.Conv2d(64, 32, 3, padding=1), 
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 3, 7, padding=3)
         )
     
     def forward(self, x):
@@ -79,38 +98,52 @@ class Autoencoder(nn.Module):
 
         # ------------------------------- Encoder ------------------------------- #
         e0 = self.encoder[0](x)
-        e1 = self.encoder[1](e0)
-        e2 = self.encoder[2](e1) + e0
-        e3 = self.encoder[3](e2) # Maxpooling
-
+        e1 = self.relu(self.encoder[1](e0))
+        e2 = self.encoder[2](e1)
+        e3 = self.relu(self.encoder[3](e2))
         e4 = self.encoder[4](e3)
-        e5 = self.encoder[5](e4) + e3
+        e5 = self.relu(self.encoder[5](e4)) + e1
         e6 = self.encoder[6](e5) # Maxpooling
-
         e7 = self.encoder[7](e6)
-        e8 = self.encoder[8](e7) + e6
-        e9 = self.encoder[9](e8) # MaxPooling
+        e8 = self.relu(self.encoder[8](e7))
+        e9 = self.encoder[9](e8)
+        e10 = self.relu(self.encoder[10](e9)) + e6
+        e11 = self.encoder[11](e10) # Maxpooling
+        e12 = self.encoder[12](e11)
+        e13 = self.relu(self.encoder[13](e12))
+        e14 = self.encoder[14](e13)
+        e15 = self.relu(self.encoder[15](e14)) + e11
+        e16 = self.encoder[16](e15) # Maxpooling
         
+
+        med_l1 = self.relu(self.mediator(e16))
         # ------------------------------- Decoder ------------------------------- #
-        d0 = self.decoder[0](e9)
-        d1 = self.decoder[1](d0) # Upsampling
-        d1_skip = torch.cat((e8, d1), dim=1) # Concatenating from Encoder
+        print("Encoder is done with output of shape", e16.shape)
 
-        d2 = self.decoder[2](d1_skip)
-        d3 = self.decoder[3](d2) + d1_skip
-        d4 = self.decoder[4](d3) # Upsampling
-        d4_skip = torch.cat((e5, d4), dim=1) # Concatenating from Encoder
+        # deconv major block 1
+        d0 = self.decoder[0](med_l1) + e15
+        d1 = self.decoder[1](d0) 
+        d2 = self.relu(self.decoder[2](d1))
+        d3 = self.decoder[3](d2) 
+        d4 = self.relu(self.decoder[4](d3)) + d0
+        d5 = self.decoder[5](d4) + e10
 
-        d5 = self.decoder[5](d4_skip)
-        d6 = self.decoder[6](d5) + d4_skip
-        d7 = self.decoder[7](d6) # Upsampling
-        d7_skip = torch.cat((e2, d7), dim=1) # Concatenating from Encoder
+        # deconv major block 2
+        d6 = self.decoder[6](d5) 
+        d7 = self.relu(self.decoder[7](d6))
+        d8 = self.decoder[8](d7) 
+        d9 = self.relu(self.decoder[9](d8)) + d5
+        d10 = self.decoder[10](d9) + e5
 
-        d8 = self.decoder[8](d7_skip)
-        d9 = self.decoder[9](d8) + d7_skip
-        d10 = self.decoder[10](d9) + input
-        
-        return d10
+        # deconv major block 3
+        d11 = self.decoder[11](d10)
+        d12 = self.relu(self.decoder[12](d11))
+        d13 = self.decoder[13](d12)
+        d14 = self.relu(self.decoder[14](d13)) + d10
+
+        d15 = self.decoder[15](d14) + input
+        print(d15.shape, input.shape)
+        return d15
 
 model = Autoencoder()
 
