@@ -112,16 +112,19 @@ class Autoencoder(nn.Module):
 
 		fig, axes = plt.subplots(2, n, figsize=(3 * n, 8))
 		for i in range(n):
-			input_image = original_images[i].cpu().squeeze().permute(1, 2, 0)
-			output_image = generated_images[i].cpu().squeeze().permute(1, 2, 0)
+			input_image = original_images[i].cpu().squeeze()
+			output_image = generated_images[i].cpu().squeeze()
 
-			axes[0, i].imshow(input_image)
-			axes[0, i].set_title('Input Image')
-			axes[0, i].axis('off')
+			if len(input_image.shape) == 2:
+				axes[0, i].imshow(input_image, cmap='gray')
+				axes[1, i].imshow(output_image, cmap='gray')
+			else:
+				axes[0, i].imshow(input_image.permute(1, 2, 0))
+				axes[1, i].imshow(output_image.permute(1, 2, 0))
 
-			axes[1, i].imshow(output_image)
-			axes[1, i].set_title('Output Image')
-			axes[1, i].axis('off')
+			axes[0, i].set_title('Input Image'); axes[0, i].axis('off')
+
+			axes[1, i].set_title('Output Image'); axes[1, i].axis('off')
 
 		plt.show()
 		return generated_images
@@ -141,18 +144,22 @@ class Autoencoder(nn.Module):
 		model.eval()
 		with torch.no_grad():
 			input_image = input_image.to(device)
-			output = model(input_image)
+			output = model(input_image.unsqueeze(0))
 		
-		input_image = input_image.cpu().permute(1, 2, 0)
-		output_image = output.cpu().squeeze().permute(1, 2, 0)
+		input_image = input_image.cpu().squeeze()
+		output_image = output.cpu().squeeze()
 
 		# Display input and output images side by side
 		fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
-		axes[0].imshow(input_image)
-		axes[0].set_title('Input Image'); axes[0].axis('off')
+		if len(input_image.shape) == 2:
+			axes[0].imshow(input_image, cmap='gray')
+			axes[1].imshow(output_image, cmap='gray')
+		else:
+			axes[0].imshow(input_image.permute(1, 2, 0))
+			axes[1].imshow(output_image.permute(1, 2, 0))
 
-		axes[1].imshow(output_image)
+		axes[0].set_title('Input Image'); axes[0].axis('off')
 		axes[1].set_title('Output Image'); axes[1].axis('off')
 		plt.show()
 
