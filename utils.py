@@ -78,7 +78,7 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         test_loader: the data loader for the test set
     '''
     gaussian_noise = transforms.Lambda(lambda x: addGaussianNoiseTensor(x, mean = 0.1, std = 0.05))
-    sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.06, pepper_prob = 0.06))
+    sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.015, pepper_prob = 0.015))
     poisson_noise = transforms.Lambda(lambda x: addPoissonNoiseTensor(x, intensity=0.05))
     speckle_noise = transforms.Lambda(lambda x: addSpeckleNoiseTensor(x, scale=0.4))
 
