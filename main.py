@@ -3,16 +3,18 @@ import random
 import tqdm
 import matplotlib.pyplot as plt
 
+from utility.utils import *
+from utility.noise_functions import *
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms.functional as TF
 
-from utils import *
-from AutoEncShallow import *
-from SkiD import *
-from SkiDwithSkip import *
-from SkiDwithSkipUnet import *
+from models.AutoEncShallow import *
+from models.SkiD import *
+from models.SkiDwithSkip import *
+from models.SkiDwithSkipUnet import *
 
 # Initialize the autoencoder
 model = SkidNet()
@@ -37,8 +39,8 @@ check_loss = 999
 to_train = 1
 num_epochs = 50
 if to_train:
-	start = time.time()
 	for epoch in range(num_epochs):
+		start = time.time()
 		for i, data in enumerate(tqdm.tqdm(train_loader)):
 			img, _ = data
 			optimizer.zero_grad()
@@ -50,28 +52,28 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'models/best_SkidNet_50.pth')
+			torch.save(model.state_dict(), 'saved_models/best_SkidNet_50.pth')
 
-		print(f'Time for one epoch: {time.time() - start}')
+		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 
-	torch.save(model.state_dict(), 'models/SkidNet_50.pth')
+	torch.save(model.state_dict(), 'saved_models/SkidNet_50.pth')
 
 # Load the model and test the autoencoder on test set
 model = SkidNet()
-model.load_state_dict(torch.load('models/best_SkidNet_50.pth'))
+model.load_state_dict(torch.load('saved_models/SkidNet_50.pth'))
 model.to(device)
 print('Model Loaded')
 
 # Evaluate the model
-test_loss = model.evaluate_model(model, test_loader, device)
+test_loss = evaluate_model(model, test_loader, device)
 print(f'Test loss: {test_loss:.4f}')
 
 # Generate output for random images
 n = 5
-output_images = model.generate_images(model, test_loader, n, device)
+output_images = generate_images(model, test_loader, n, device, path=None)
 print('Images Generated')
 
 # Create specific output images
 # input_image = next(iter(test_loader))[0][7]
-# model.create_output(model, input_image, device)
+# create_output(model, input_image, device)
