@@ -107,13 +107,22 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
 
     device = getDevice()
+
+    # ---------------------- Artificially Noised Images --------------------- #
     train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform, transform_noise=transform_noise)
     test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform, transform_noise=transform_noise)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=False, num_workers=0)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
-    return train_loader, test_loader
+    # ----------------------- Original Image for PSNR ----------------------- #
+    train = AutoencoderDataset(data_train, device=device, color=color, transform=transform)
+    test = AutoencoderDataset(data_test, device=device, color=color, transform=transform)
+
+    train_original = DataLoader(train, batch_size=batch_size, shuffle=True, pin_memory=False, num_workers=0)
+    test_original = DataLoader(test, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
+
+    return train_loader, test_loader, train_original, test_original
 
 def showImages(dataloader, num_images=5):
     '''
@@ -180,6 +189,45 @@ def evaluate_model(model, dataloader, device='cpu'):
     average_loss = total_loss / num_batches
     return average_loss
 
+def PSNR(model, original, dataloader, device='cpu'):
+    '''
+    Evaluates the given model on the given dataloader and returns the average PSNR
+
+    Args:
+        model: the model to generate images
+        dataloader: the dataloader to provide the dataset
+        device: the device to run the model on
+
+    Returns:
+        average_psnr: the average PSNR of the model on the dataset
+    '''
+    model.eval()
+    total_psnr = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for real, mod in zip(original, dataloader):
+            actual, _ = real
+            actual = actual.to(device)
+            
+            images, _ = mod
+            images = images.to(device)
+
+            # Forward pass
+            outputs = model(images)
+
+            if images.dim() == 3:
+                highest = torch.max(images, dim = (1, 2))
+            else: highest = torch.max(images)
+
+            mse = nn.functional.mse_loss(outputs, actual)
+            psnr = 10 * torch.log10((highest ** 2) / mse)
+            total_psnr += psnr.item()
+            num_batches += 1
+
+    average_psnr = total_psnr / num_batches
+    return average_psnr
+
 def generate_images(model, dataloader, n, device='cpu', path=None):
     '''
     Picks n random images from a dataset and generates output images from a given model
@@ -196,6 +244,7 @@ def generate_images(model, dataloader, n, device='cpu', path=None):
     model.eval()
     original_images =[]
     generated_images = []
+    random.seed(2024)
     random_indices = random.sample(range(dataloader.batch_size), n)
 
     with torch.no_grad():

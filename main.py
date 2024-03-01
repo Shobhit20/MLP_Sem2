@@ -21,7 +21,7 @@ model = SkidNet()
 
 data_dir = 'data/'
 batch_size = 32
-train_loader, test_loader = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
+train_loader, test_loader, train_original, test_original = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
 print('Data Loading Complete!')
 # showImages(train_loader, 5)
 
@@ -36,7 +36,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # Training the autoencoder
 check_loss = 999
-to_train = 1
+to_train = 0
 num_epochs = 50
 if to_train:
 	for epoch in range(num_epochs):
@@ -61,13 +61,17 @@ if to_train:
 
 # Load the model and test the autoencoder on test set
 model = SkidNet()
-model.load_state_dict(torch.load('saved_models/SkidNet_50.pth'))
+model.load_state_dict(torch.load('saved_models/best_SkidNet_50.pth'))
 model.to(device)
 print('Model Loaded')
 
 # Evaluate the model
 test_loss = evaluate_model(model, test_loader, device)
 print(f'Test loss: {test_loss:.4f}')
+
+# PSNR of Model
+psnr = PSNR(model, test_original, test_loader, device)
+print(f'PSNR on Test: {psnr:.4f}')
 
 # Generate output for random images
 n = 5
