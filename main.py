@@ -15,9 +15,10 @@ from models.AutoEncShallow import *
 from models.SkiD import *
 from models.SkiDwithSkip import *
 from models.SkiDwithSkipUnet import *
+from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = SkidNet()
+model = UNet(use_attention_gate=True)
 
 data_dir = 'data/'
 batch_size = 32
@@ -31,47 +32,52 @@ print(f'Device: {device}\n')
 model.to(device)
 
 # Define the loss function and optimizer
-criterion = nn.MSELoss()
+criterion = nn.functional.binary_cross_entropy_with_logits ##nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # Training the autoencoder
 check_loss = 999
 to_train = 0
-num_epochs = 50
+num_epochs = 10
 if to_train:
 	for epoch in range(num_epochs):
 		start = time.time()
-		for i, data in enumerate(tqdm.tqdm(train_loader)):
-			img, _ = data
+		for i, (real, mod) in enumerate(tqdm.tqdm(zip(train_original, train_loader), total=len(train_original))):
+			actual, _ = real
+			modif, _ = mod
 			optimizer.zero_grad()
-			output = model(img)
-			loss = criterion(output, img)
+
+			output = model(modif)
+			loss = criterion(output, actual)
+
 			loss.backward()
 			optimizer.step()
 
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'saved_models/best_SkidNet_50.pth')
+			torch.save(model.state_dict(), 'saved_models/bSuperMRI_10.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 
-	torch.save(model.state_dict(), 'saved_models/SkidNet_50.pth')
+	torch.save(model.state_dict(), 'saved_models/SuperMRI_10.pth')
 
 # Load the model and test the autoencoder on test set
-model = SkidNet()
-model.load_state_dict(torch.load('saved_models/best_SkidNet_50.pth'))
+model = UNet(use_attention_gate=True)
+model.load_state_dict(torch.load('saved_models/bSuperMRI_10.pth'))
 model.to(device)
-print('Model Loaded')
+print('Model Loaded\n')
 
 # Evaluate the model
-test_loss = evaluate_model(model, test_loader, device)
-print(f'Test loss: {test_loss:.4f}')
+print(f'Evaluating the Model:')
+test_loss = evaluate_model(model, test_original, test_loader, device)
+print(f'Test loss: {test_loss:.4f}\n')
 
 # PSNR of Model
+print(f'Calculating PSNR of Model:')
 psnr = PSNR(model, test_original, test_loader, device)
-print(f'PSNR on Test: {psnr:.4f}')
+print(f'PSNR on Test: {psnr:.4f}\n')
 
 # Generate output for random images
 n = 5

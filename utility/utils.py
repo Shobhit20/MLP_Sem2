@@ -4,6 +4,7 @@ from PIL import Image
 import random
 import matplotlib.pyplot as plt
 import numpy as np
+import tqdm
 
 import torch
 import torch.nn as nn
@@ -112,14 +113,14 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform, transform_noise=transform_noise)
     test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform, transform_noise=transform_noise)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=False, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
     # ----------------------- Original Image for PSNR ----------------------- #
     train = AutoencoderDataset(data_train, device=device, color=color, transform=transform)
     test = AutoencoderDataset(data_test, device=device, color=color, transform=transform)
 
-    train_original = DataLoader(train, batch_size=batch_size, shuffle=True, pin_memory=False, num_workers=0)
+    train_original = DataLoader(train, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
     test_original = DataLoader(test, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
     return train_loader, test_loader, train_original, test_original
@@ -156,7 +157,7 @@ def getDevice():
     '''Returns the device to be used in case of availability of the GPU'''
     return torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
-def evaluate_model(model, dataloader, device='cpu'):
+def evaluate_model(model, original, dataloader, device='cpu'):
     '''
     Evaluates the given model on the given dataloader and returns the average loss
 
@@ -173,15 +174,18 @@ def evaluate_model(model, dataloader, device='cpu'):
     num_batches = 0
 
     with torch.no_grad():
-        for data in dataloader:
-            images, _ = data
-            images = images.to(device)
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
+            actual, _ = real
+            actual = actual.to(device)
+
+            modif, _ = mod
+            modif = modif.to(device)
 
             # Forward pass
-            outputs = model(images)
+            outputs = model(modif)
 
             # Calculate reconstruction loss (MSE)
-            loss = nn.functional.mse_loss(outputs, images)
+            loss = nn.functional.binary_cross_entropy_with_logits(outputs, actual)
 
             total_loss += loss.item()
             num_batches += 1
@@ -206,7 +210,7 @@ def PSNR(model, original, dataloader, device='cpu'):
     num_batches = 0
 
     with torch.no_grad():
-        for real, mod in zip(original, dataloader):
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
             actual, _ = real
             actual = actual.to(device)
             
