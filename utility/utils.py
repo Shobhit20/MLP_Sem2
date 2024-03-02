@@ -105,7 +105,7 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         image_path = os.path.join(data_dir, image_name)
         data.append(image_path)
 
-    data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
+    data_train, data_test = train_test_split(data, test_size=test_size)
 
     device = getDevice()
 
