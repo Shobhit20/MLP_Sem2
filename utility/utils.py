@@ -228,6 +228,11 @@ def PSNR(model, original, dataloader, device='cpu'):
             mse = nn.functional.mse_loss(outputs, actual)
             psnr = 10 * torch.log10((highest ** 2) / mse)
             total_psnr += psnr.item()
+            print(f'Highest: {highest}')
+            print(f'Highest ^ 2: {(torch.square(highest))}')
+            print(f'MSE: {mse.item()}')
+            print(f'PSNR: {psnr.item()}')
+            print(f'Total PSNR: {total_psnr}')
             num_batches += 1
 
     average_psnr = total_psnr / num_batches
