@@ -21,7 +21,7 @@ from models.SuperMRI import *
 model = SkidNet()
 
 data_dir = 'data/'
-batch_size = 8
+batch_size = 32
 train_loader, test_loader, train_original, test_original = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
 print('Data Loading Complete!')
 # showImages(train_loader, 5)

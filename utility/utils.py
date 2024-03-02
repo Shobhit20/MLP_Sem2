@@ -221,18 +221,13 @@ def PSNR(model, original, dataloader, device='cpu'):
             outputs = model(images)
 
             if actual.dim() == 3:
-                highest = torch.max(actual, dim = (1, 2))
-            else: highest = torch.max(actual)
+                highest = torch.max(actual, dim = (1, 2)).item()
+            else: highest = torch.max(actual).item()
             actual = (actual.float() / 255.0)
 
             mse = nn.functional.mse_loss(outputs, actual)
             psnr = 10 * torch.log10((highest ** 2) / mse)
             total_psnr += psnr.item()
-            print(f'Highest: {highest}')
-            print(f'Highest ^ 2: {(torch.square(highest))}')
-            print(f'MSE: {mse.item()}')
-            print(f'PSNR: {psnr.item()}')
-            print(f'Total PSNR: {total_psnr}')
             num_batches += 1
 
     average_psnr = total_psnr / num_batches
