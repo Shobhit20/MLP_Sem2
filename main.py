@@ -2,6 +2,8 @@ import time
 import random
 import tqdm
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 from utility.utils import *
 from utility.noise_functions import *
@@ -56,7 +58,7 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'saved_models/512SuperMRI_50.pth')
+			torch.save(model.state_dict(), 'saved_models/bSuperMRI_50.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
@@ -65,7 +67,7 @@ if to_train:
 
 # Load the model and test the autoencoder on test set
 model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('saved_models/512SuperMRI_50.pth'))
+model.load_state_dict(torch.load('saved_models/bSuperMRI_50.pth'))
 model.to(device)
 print('Model Loaded\n')
 

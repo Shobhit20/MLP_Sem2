@@ -218,16 +218,18 @@ def PSNR(model, original, dataloader, device='cpu'):
     with torch.no_grad():
         for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
             actual, _ = real
-            actual = actual.to(device)
+            actual = (actual * 255).to(torch.uint8).to(device)
             
             images, _ = mod
             images = images.to(device)
 
             # Forward pass
             outputs = model(images)
-            if images.dim() == 3:
-                highest = torch.max(images, dim = (1, 2))
-            else: highest = torch.max(images)
+
+            if actual.dim() == 3:
+                highest = torch.max(actual, dim = (1, 2)).item()
+            else: highest = torch.max(actual).item()
+            actual = (actual.float() / 255.0)
 
             mse = nn.functional.mse_loss(outputs, actual)
             psnr = 10 * torch.log10((highest ** 2) / mse)
