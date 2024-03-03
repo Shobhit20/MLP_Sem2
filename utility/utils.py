@@ -225,7 +225,6 @@ def PSNR(model, original, dataloader, device='cpu'):
 
             # Forward pass
             outputs = model(images)
-            print(outpur)
             if images.dim() == 3:
                 highest = torch.max(images, dim = (1, 2))
             else: highest = torch.max(images)
