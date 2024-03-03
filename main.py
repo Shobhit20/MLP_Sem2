@@ -56,16 +56,16 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'saved_models/bSkidNet_50.pth')
+			torch.save(model.state_dict(), 'saved_models/512SuperMRI_50.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 
-	torch.save(model.state_dict(), 'saved_models/nSkidNet_50.pth')
+	# torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 # Load the model and test the autoencoder on test set
 model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('saved_models/bSkidNet_50.pth'))
+model.load_state_dict(torch.load('saved_models/512SuperMRI_50.pth'))
 model.to(device)
 print('Model Loaded\n')
 
@@ -81,7 +81,7 @@ print(f'PSNR on Test: {psnr:.4f}\n')
 
 # Generate output for random images
 n = 5
-output_images = generate_images(model, test_loader, n, device, path=None)
+output_images = generate_images(model, test_loader, n, device, path='512SuperMRI_50')
 print('Images Generated')
 
 # Create specific output images
