@@ -12,7 +12,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import torchvision.utils as vutils
 from sklearn.model_selection import train_test_split
-
+from utility.noise import gaussian_blur, add_poisson_noise, add_salt_and_pepper_noise, add_speckle_noise
 from utility.noise_functions import *
 
 class AutoencoderDataset(Dataset):
@@ -81,10 +81,15 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         train_loader: the data loader for the training set
         test_loader: the data loader for the test set
     '''
-    gaussian_noise = transforms.Lambda(lambda x: addGaussianNoiseTensor(x, mean = 0.1, std = 0.05))
-    sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.015, pepper_prob = 0.015))
-    poisson_noise = transforms.Lambda(lambda x: addPoissonNoiseTensor(x, intensity=0.05))
-    speckle_noise = transforms.Lambda(lambda x: addSpeckleNoiseTensor(x, scale=0.4))
+    # gaussian_noise = transforms.Lambda(lambda x: addGaussianNoiseTensor(x, mean = 0.1, std = 0.05))
+    # sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.015, pepper_prob = 0.015))
+    # poisson_noise = transforms.Lambda(lambda x: addPoissonNoiseTensor(x, intensity=0.05))
+    # speckle_noise = transforms.Lambda(lambda x: addSpeckleNoiseTensor(x, scale=0.4))
+    gaussian_noise = transforms.Lambda(lambda x: gaussian_blur(x, kernel_size=15, sigma=1))
+    sap_noise = transforms.Lambda(lambda x: add_salt_and_pepper_noise(x, salt_prob=0.05, pepper_prob=0.05))
+    poisson_noise = transforms.Lambda(lambda x: add_poisson_noise(x, 0.1))
+    speckle_noise = transforms.Lambda(lambda x: add_speckle_noise(x))
+
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
@@ -96,7 +101,8 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         transform_noise = transforms.Compose([
             transforms.RandomApply([gaussian_noise], p = 0.4),
             transforms.RandomApply([sap_noise], p = 0.4),
-            transforms.RandomApply([poisson_noise], p = 0.4)
+            transforms.RandomApply([poisson_noise], p = 0.4),
+            transforms.RandomApply([speckle_noise], p = 0.4)
         ])
     else: transform_noise = None
 
@@ -212,18 +218,17 @@ def PSNR(model, original, dataloader, device='cpu'):
     with torch.no_grad():
         for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
             actual, _ = real
-            actual = (actual * 255).to(torch.uint8).to(device)
+            actual = actual.to(device)
             
             images, _ = mod
             images = images.to(device)
 
             # Forward pass
             outputs = model(images)
-
-            if actual.dim() == 3:
-                highest = torch.max(actual, dim = (1, 2)).item()
-            else: highest = torch.max(actual).item()
-            actual = (actual.float() / 255.0)
+            print(outpur)
+            if images.dim() == 3:
+                highest = torch.max(images, dim = (1, 2))
+            else: highest = torch.max(images)
 
             mse = nn.functional.mse_loss(outputs, actual)
             psnr = 10 * torch.log10((highest ** 2) / mse)
