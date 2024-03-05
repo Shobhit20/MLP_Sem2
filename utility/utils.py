@@ -225,11 +225,11 @@ def PSNR(model, original, dataloader, device='cpu'):
 
             # Forward pass
             outputs = model(images)
+            outputs = (outputs * 255).to(torch.uint8).to(device)
 
             if actual.dim() == 3:
                 highest = torch.max(actual, dim = (1, 2)).item()
             else: highest = torch.max(actual).item()
-            actual = (actual.float() / 255.0)
 
             mse = nn.functional.mse_loss(outputs, actual)
             psnr = 10 * torch.log10((highest ** 2) / mse)
