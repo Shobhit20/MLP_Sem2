@@ -20,11 +20,11 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = SkidNet()
+model = UNet(use_attention_gate=True)
 
 data_dir = 'data/'
 batch_size = 32
-train_loader, test_loader, train_original, test_original = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
+train_loader, test_loader = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
 print('Data Loading Complete!')
 # showImages(train_loader, 5)
 
@@ -44,9 +44,8 @@ num_epochs = 10
 if to_train:
 	for epoch in range(num_epochs):
 		start = time.time()
-		for i, (real, mod) in enumerate(tqdm.tqdm(zip(train_original, train_loader), total=len(train_original))):
-			actual, _ = real
-			modif, _ = mod
+		for i, mod in enumerate(tqdm.tqdm(train_loader, total = len(train_loader))):
+			modif, actual = mod
 			optimizer.zero_grad()
 
 			output = model(modif)
@@ -58,7 +57,7 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'saved_models/bSkidNet_0.001.pth')
+			torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
@@ -66,24 +65,24 @@ if to_train:
 	# torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 # Load the model and test the autoencoder on test set
-model = SkidNet()
+model = UNet(use_attention_gate=True)
 model.load_state_dict(torch.load('saved_models/bSkidNet_0.001.pth'))
 model.to(device)
 print('Model Loaded\n')
 
 # Evaluate the model
 print(f'Evaluating the Model:')
-test_loss = evaluate_model(model, test_original, test_loader, device)
+test_loss = evaluate_model(model, test_loader, device)
 print(f'Test loss: {test_loss:.4f}\n')
 
 # PSNR of Model
 print(f'Calculating PSNR of Model:')
-psnr = PSNR(model, test_original, test_loader, device)
+psnr = PSNR(model, test_loader, device)
 print(f'PSNR on Test: {psnr:.4f}\n')
 
 # Generate output for random images
 n = 5
-output_images = generate_images(model, test_loader, n, device, path='SkidNet_0.001')
+output_images = generate_images(model, test_loader, n, device, path=None)
 print('Images Generated')
 
 # Create specific output images

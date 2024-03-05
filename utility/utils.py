@@ -111,7 +111,7 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         image_path = os.path.join(data_dir, image_name)
         data.append(image_path)
 
-    data_train, data_test = train_test_split(data, test_size=test_size)
+    data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
 
     device = getDevice()
 
@@ -122,14 +122,7 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
-    # ----------------------- Original Image for PSNR ----------------------- #
-    train = AutoencoderDataset(data_train, device=device, color=color, transform=transform)
-    test = AutoencoderDataset(data_test, device=device, color=color, transform=transform)
-
-    train_original = DataLoader(train, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
-    test_original = DataLoader(test, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
-
-    return train_loader, test_loader, train_original, test_original
+    return train_loader, test_loader
 
 def showImages(dataloader, num_images=5):
     '''
@@ -163,7 +156,7 @@ def getDevice():
     '''Returns the device to be used in case of availability of the GPU'''
     return torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
-def evaluate_model(model, original, dataloader, device='cpu'):
+def evaluate_model(model, dataloader, device='cpu'):
     '''
     Evaluates the given model on the given dataloader and returns the average loss
 
@@ -180,12 +173,10 @@ def evaluate_model(model, original, dataloader, device='cpu'):
     num_batches = 0
 
     with torch.no_grad():
-        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
-            actual, _ = real
-            actual = actual.to(device)
-
-            modif, _ = mod
+        for i, mod in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
+            modif, actual = mod
             modif = modif.to(device)
+            actual = actual.to(device)
 
             # Forward pass
             outputs = model(modif)
@@ -199,7 +190,7 @@ def evaluate_model(model, original, dataloader, device='cpu'):
     average_loss = total_loss / num_batches
     return average_loss
 
-def PSNR(model, original, dataloader, device='cpu'):
+def PSNR(model, dataloader, device='cpu'):
     '''
     Evaluates the given model on the given dataloader and returns the average PSNR
 
@@ -216,15 +207,13 @@ def PSNR(model, original, dataloader, device='cpu'):
     num_batches = 0
 
     with torch.no_grad():
-        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
-            actual, _ = real
+        for i, mod in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
+            modif, actual = mod
+            modif = modif.to(device)
             actual = (actual * 255).to(torch.uint8).to(device)
-            
-            images, _ = mod
-            images = images.to(device)
 
             # Forward pass
-            outputs = model(images)
+            outputs = model(modif)
             outputs = (outputs * 255).to(torch.uint8).to(device)
 
             if actual.dim() == 3:
