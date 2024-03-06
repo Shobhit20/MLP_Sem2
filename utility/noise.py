@@ -142,29 +142,3 @@ def gaussian_blur(image, kernel_size, sigma):
     blurred_tensor = kernel(image_tensor)
 
     return blurred_tensor.squeeze(0)
-
-
-# # Example usage:
-# image_path = "data/00009229_016.png"  
-# input_image = Image.open(image_path).convert('L')  # Load an example input image
-# # Example usage:
-# size = 1024  # Size of the mask
-# std = 200 # Standard deviation of the Gaussian distribution
-# print("input mae")
-
-# # input_image.show()
-
-# # noisy_image = add_speckle_noise(input_image)
-# # noisy_image = add_poisson_noise(input_image, 0.8)
-
-# # Apply Gaussian blur with varying standard deviation to the input image
-# blurred_image = gaussian_blur(input_image, kernel_size=15, sigma=5)
-
-# plt.imshow(blurred_image, cmap='gray', vmin=0, vmax=255, interpolation='nearest')
-# plt.show()
-# gaussian = gaussian_mask(size, std)
-# mask = generate_binary_mask_from_gaussian(gaussian)
-
-
-# noisy_image = add_salt_and_pepper_noise(input_image, mask, salt_prob=0.1, pepper_prob=0.1)
-# noisy_image.show()  # Display the noisy image

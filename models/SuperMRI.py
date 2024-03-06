@@ -284,7 +284,7 @@ class UNet(nn.Module):
     reference: https://github.com/milesial/Pytorch-UNet/tree/master/unet
     """
 
-    def __init__(self, max_blocks: int = 5, use_attention_gate: bool = False):
+    def __init__(self, max_blocks: int = 6, use_attention_gate: bool = False):
         """initialize UNet model
         Args:
           args
@@ -301,7 +301,7 @@ class UNet(nn.Module):
 
         # calculate the number of down scale blocks s.t. the smallest block output
         # is at least 2x2 in height and width
-        num_blocks = 3
+        num_blocks = 10
         self.filters = [
             num_filters * (2**i) for i in range(min(num_blocks, max_blocks))
         ]

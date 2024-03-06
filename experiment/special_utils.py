@@ -81,15 +81,10 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         train_loader: the data loader for the training set
         test_loader: the data loader for the test set
     '''
-    # gaussian_noise = transforms.Lambda(lambda x: addGaussianNoiseTensor(x, mean = 0.1, std = 0.05))
-    # sap_noise = transforms.Lambda(lambda x: addSaltPepperNoiseTensor(x, salt_prob = 0.015, pepper_prob = 0.015))
-    # poisson_noise = transforms.Lambda(lambda x: addPoissonNoiseTensor(x, intensity=0.05))
-    # speckle_noise = transforms.Lambda(lambda x: addSpeckleNoiseTensor(x, scale=0.4))
     gaussian_noise = transforms.Lambda(lambda x: gaussian_blur(x, kernel_size=15, sigma=1))
     sap_noise = transforms.Lambda(lambda x: add_salt_and_pepper_noise(x, salt_prob=0.05, pepper_prob=0.05))
     poisson_noise = transforms.Lambda(lambda x: add_poisson_noise(x, 0.1))
     speckle_noise = transforms.Lambda(lambda x: add_speckle_noise(x))
-
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
@@ -156,7 +151,7 @@ def getDevice():
     '''Returns the device to be used in case of availability of the GPU'''
     return torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
-def evaluate_model(model, dataloader, device='cpu'):
+def evaluate_model_pipeline(model, original, dataloader, device='cpu'):
     '''
     Evaluates the given model on the given dataloader and returns the average loss
 
@@ -174,16 +169,18 @@ def evaluate_model(model, dataloader, device='cpu'):
     criterion = nn.MSELoss()
 
     with torch.no_grad():
-        for i, mod in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
-            modif, actual = mod
-            modif = modif.to(device)
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
+            actual, _ = real
             actual = actual.to(device)
+
+            modif, _ = mod
+            modif = modif.to(device)
 
             # Forward pass
             outputs = model(modif)
 
             # Calculate reconstruction loss (MSE)
-            loss = criterion(outputs, actual)
+            loss = criterion(outputs, actual) # .functional.binary_cross_entropy_with_logits
 
             total_loss += loss.item()
             num_batches += 1
@@ -191,7 +188,7 @@ def evaluate_model(model, dataloader, device='cpu'):
     average_loss = total_loss / num_batches
     return average_loss
 
-def PSNR(model, dataloader, device='cpu'):
+def PSNR_pipeline(model, original, dataloader, device='cpu'):
     '''
     Evaluates the given model on the given dataloader and returns the average PSNR
 
@@ -208,10 +205,12 @@ def PSNR(model, dataloader, device='cpu'):
     num_batches = 0
 
     with torch.no_grad():
-        for i, mod in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
-            modif, actual = mod
-            modif = modif.to(device)
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
+            actual, _ = real
             actual = (actual * 255).to(torch.uint8).to(device)
+
+            modif, _ = mod
+            modif = modif.to(device)
 
             # Forward pass
             outputs = model(modif)
@@ -229,7 +228,7 @@ def PSNR(model, dataloader, device='cpu'):
     average_psnr = total_psnr / num_batches
     return average_psnr
 
-def generate_images(model, dataloader, n, device='cpu', path=None):
+def generate_images_pipeline(model, original, dataloader, n, device='cpu', path=None):
     '''
     Picks n random images from a dataset and generates output images from a given model
 
@@ -245,36 +244,46 @@ def generate_images(model, dataloader, n, device='cpu', path=None):
     model.eval()
     original_images =[]
     generated_images = []
-    random.seed(2024)
+    actual_images = []
+    random.seed(random.random())
     random_indices = random.sample(range(dataloader.batch_size), n)
 
     with torch.no_grad():
-        for i, data in enumerate(dataloader):
+        for i, (real, mod) in enumerate(zip(original, dataloader)):
             if i in random_indices:
-                img, _ = data
-                img = img.to(device)
-                output = model(img)
-                original_images.append(img[0])
+                actual, _ = real
+                modif, _ = mod
+                modif = modif.to(device)
+
+                # Forward Pass
+                output = model(modif)
+
+                original_images.append(modif[0])
                 generated_images.append(output[0])
+                actual_images.append(actual[0])
     print(f'Sample Images Selected {random_indices}')
 
-    fig, axes = plt.subplots(2, n, figsize=(3 * n, 8))
+    fig, axes = plt.subplots(3, n, figsize=(3 * n, 8))
     for i in range(n):
         input_image = original_images[i].cpu().squeeze()
         output_image = generated_images[i].cpu().squeeze()
+        actual_image = actual_images[i].cpu().squeeze()
 
         if len(input_image.shape) == 2:
             axes[0, i].imshow(input_image, cmap='gray')
             axes[1, i].imshow(output_image, cmap='gray')
+            axes[2, i].imshow(actual_image, cmap='gray')
         else:
             axes[0, i].imshow(input_image.permute(1, 2, 0))
             axes[1, i].imshow(output_image.permute(1, 2, 0))
+            axes[2, i].imshow(actual_image.permute(1, 2, 0))
 
         axes[0, i].set_title('Input Image'); axes[0, i].axis('off')
         axes[1, i].set_title('Output Image'); axes[1, i].axis('off')
+        axes[2, i].set_title('Actual Image'); axes[2, i].axis('off')
     
     if path:
-        plt.savefig(f'generated_images/{path}.png')
+        plt.savefig(f'{path}.png')
 
     plt.show()
     return generated_images
