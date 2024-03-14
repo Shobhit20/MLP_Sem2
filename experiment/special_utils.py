@@ -263,9 +263,10 @@ def SSIM_pipeline(model, original, dataloader, device='cpu'):
             outputs = model(modif)
             outputs = outputs.cpu().squeeze().numpy()
 
-            ssim = structural_similarity(actual, outputs, data_range=1.0, full=True)
-            total_ssim += ssim[0]
-            num_batches += 1
+            for j in range(len(outputs)):
+                ssim = structural_similarity(actual[j], outputs[j], data_range=1.0, full=True)
+                total_ssim += ssim[0]
+                num_batches += 1
 
     average_ssim = total_ssim / num_batches
     return average_ssim
