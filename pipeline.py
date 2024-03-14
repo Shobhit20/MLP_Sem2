@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms.functional as TF
 from torchvision import utils
+from skimage.metrics import structural_similarity
 
 from models.AutoEncShallow import *
 from models.SkiD import *
@@ -37,11 +38,11 @@ print(f'Device: {device}\n')
 
 # Initialize the models
 model1 = SkidNet()
-model1.load_state_dict(torch.load('saved_models/bSkidNet_0.001.pth'))
+model1.load_state_dict(torch.load('final/SkidNet_2.pth'))
 model1.to(device)
 
 model2 = UNet(use_attention_gate=True)
-model2.load_state_dict(torch.load('experiment/bUnet_big-MSE.pth'))
+model2.load_state_dict(torch.load('final/Unet_2.pth'))
 model2.to(device)
 
 
@@ -70,6 +71,31 @@ with torch.no_grad():
         psnr = 10 * torch.log10((highest ** 2) / mse)
         total_psnr += psnr.item(); num_batches += 1
 print(f'Average PSNR: {total_psnr / num_batches:.4f}\n')
+
+
+# ------------------ Calculating SSIM for the pipeline ------------------ #
+print('Calculating PSNR for the Pipeline:')
+total_ssim = 0.0
+num_batches = 0
+with torch.no_grad():
+    for i, (real, mod) in enumerate(tqdm.tqdm(zip(test_original, test_loader), total=len(test_loader))):
+        actual, _ = real
+        actual = actual.cpu().squeeze().numpy()
+
+        modif, _ = mod
+        modif = modif.to(device)
+
+        # Forward pass
+        output = model1(modif)
+        output = model2(output)
+        output = output.cpu().squeeze().numpy()
+        
+        for j in range(len(output)):
+            ssim = structural_similarity(actual[j], output[j], data_range=1.0, full=True)
+            total_ssim += ssim[0]
+            num_batches += 1
+
+print(f'Average SSIM of the Model: {total_ssim / num_batches}\n')
 
 
 # ---------------- Pushing the images through the models ---------------- #

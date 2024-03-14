@@ -11,6 +11,7 @@ import torch.nn as nn
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import torchvision.utils as vutils
+from skimage.metrics import structural_similarity
 from sklearn.model_selection import train_test_split
 from utility.noise import gaussian_blur, add_poisson_noise, add_salt_and_pepper_noise, add_speckle_noise
 from utility.noise_functions import *
@@ -95,9 +96,9 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     if noise:
         transform_noise = transforms.Compose([
             transforms.RandomApply([gaussian_noise], p = 0.4),
-            transforms.RandomApply([sap_noise], p = 0.4),
             transforms.RandomApply([poisson_noise], p = 0.4),
-            transforms.RandomApply([speckle_noise], p = 0.4)
+            transforms.RandomApply([speckle_noise], p = 0.4),
+            transforms.RandomApply([sap_noise], p = 0.4),
         ])
     else: transform_noise = None
 
@@ -153,11 +154,13 @@ def getDevice():
 
 def evaluate_model_pipeline(model, original, dataloader, device='cpu'):
     '''
-    Evaluates the given model on the given dataloader and returns the average loss
+    Evaluates the given model on the specified dataloaders of artifically noised and 
+    original images and returns the average loss
 
     Args:
         model: the model to be evaluated
-        dataloader: the dataloader to provide the dataset
+        original: the dataloader to provide unmodified images
+        dataloader: the dataloader to provide images with artificial noise
         device: the device to run the model on
 
     Returns:
@@ -190,11 +193,13 @@ def evaluate_model_pipeline(model, original, dataloader, device='cpu'):
 
 def PSNR_pipeline(model, original, dataloader, device='cpu'):
     '''
-    Evaluates the given model on the given dataloader and returns the average PSNR
+    Generates images using the model from the noisy image dataloader and calculates the average 
+    PSNR by taking the original image from the original dataloader
 
     Args:
         model: the model to generate images
-        dataloader: the dataloader to provide the dataset
+        original: the dataloader to provide unmodified images
+        dataloader: the dataloader to provide images with artificial noise
         device: the device to run the model on
 
     Returns:
@@ -228,6 +233,43 @@ def PSNR_pipeline(model, original, dataloader, device='cpu'):
     average_psnr = total_psnr / num_batches
     return average_psnr
 
+def SSIM_pipeline(model, original, dataloader, device='cpu'):
+    '''
+    Generates images using the model from the noisy image dataloader and calculates the average 
+    SSIM by taking the original image from the original dataloader
+
+    Args:
+        model: the model to generate images
+        original: the dataloader to provide unmodified images
+        dataloader: the dataloader to provide images with artificial noise
+        device: the device to run the model on
+
+    Returns:
+        average_ssim: the average SSIM of the model on the dataset
+    '''
+    model.eval()
+    total_ssim = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=len(original))):
+            actual, _ = real
+            actual = actual.cpu().squeeze().numpy()
+
+            modif, _ = mod
+            modif = modif.to(device)
+
+            # Forward pass
+            outputs = model(modif)
+            outputs = outputs.cpu().squeeze().numpy()
+
+            ssim = structural_similarity(actual, outputs, data_range=1.0, full=True)
+            total_ssim += ssim[0]
+            num_batches += 1
+
+    average_ssim = total_ssim / num_batches
+    return average_ssim
+
 def generate_images_pipeline(model, original, dataloader, n, device='cpu', path=None):
     '''
     Picks n random images from a dataset and generates output images from a given model
@@ -249,7 +291,7 @@ def generate_images_pipeline(model, original, dataloader, n, device='cpu', path=
     random_indices = random.sample(range(dataloader.batch_size), n)
 
     with torch.no_grad():
-        for i, (real, mod) in enumerate(zip(original, dataloader)):
+        for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=(len(original)))):
             if i in random_indices:
                 actual, _ = real
                 modif, _ = mod

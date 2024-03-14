@@ -1,6 +1,8 @@
 .DS_Store
 data/
 data2/
-new_data/
-new_data_og/
+Skid_BCE/
+Skid_BCE_og/
+Skid_MSE/
+Skid_MSE_og/
 __pycache__/

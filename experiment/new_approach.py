@@ -29,8 +29,8 @@ model = UNet(use_attention_gate=True)
 
 data_dir = 'data/'
 batch_size = 32
-mid_train_loader, mid_test_loader = loadData('new_data', batch_size, test_size=0.2, color='gray', noise=False)
-mid_train_original, mid_test_original = loadData('new_data_og', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_loader, mid_test_loader = loadData('Skid_MSE', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_original, mid_test_original = loadData('Skid_MSE_og', batch_size, test_size=0.2, color='gray', noise=False)
 print('Data Loading Complete!')
 # showImages(mid_train_loader, 5)
 # showImages(mid_train_original, 5)
@@ -65,14 +65,14 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'experiment/bUnet_big-MSE.pth')
+			torch.save(model.state_dict(), 'final/Unet_2.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 		
 # Load the model and test the autoencoder on test set
 model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('experiment/bUnet_big-MSE.pth'))
+model.load_state_dict(torch.load('final/Unet_2.pth'))
 model.to(device)
 print('Model Loaded\n')
 
@@ -85,6 +85,11 @@ print(f'Test loss: {test_loss:.4f}\n')
 print(f'Calculating PSNR of Model:')
 psnr = PSNR_pipeline(model, mid_test_original, mid_test_loader, device)
 print(f'PSNR on Test: {psnr:.4f}\n')
+
+# SSIM of Model
+print(f'Calculating SSIM of Model:')
+psnr = SSIM_pipeline(model, mid_test_original, mid_test_loader, device)
+print(f'SSIM on Test: {psnr:.4f}\n')
 
 # Generate output for random images
 n = 5

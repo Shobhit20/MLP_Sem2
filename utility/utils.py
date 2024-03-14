@@ -11,6 +11,7 @@ import torch.nn as nn
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import torchvision.utils as vutils
+from skimage.metrics import structural_similarity
 from sklearn.model_selection import train_test_split
 from utility.noise import gaussian_blur, add_poisson_noise, add_salt_and_pepper_noise, add_speckle_noise
 from utility.noise_functions import *
@@ -100,9 +101,9 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
     if noise:
         transform_noise = transforms.Compose([
             transforms.RandomApply([gaussian_noise], p = 0.4),
-            transforms.RandomApply([sap_noise], p = 0.4),
             transforms.RandomApply([poisson_noise], p = 0.4),
-            transforms.RandomApply([speckle_noise], p = 0.4)
+            transforms.RandomApply([speckle_noise], p = 0.4),
+            transforms.RandomApply([sap_noise], p = 0.4)
         ])
     else: transform_noise = None
 
@@ -193,7 +194,7 @@ def evaluate_model(model, dataloader, device='cpu'):
 
 def PSNR(model, dataloader, device='cpu'):
     '''
-    Evaluates the given model on the given dataloader and returns the average PSNR
+    Generates images using the model and returns the average PSNR of the images
 
     Args:
         model: the model to generate images
@@ -229,9 +230,42 @@ def PSNR(model, dataloader, device='cpu'):
     average_psnr = total_psnr / num_batches
     return average_psnr
 
+def SSIM(model, dataloader, device='cpu'):
+    '''
+    Generates images using the model and returns the average SSIM of the images
+
+    Args:
+        model: the model to generate images
+        dataloader: the dataloader to provide the dataset
+        device: the device to run the model on
+
+    Returns:
+        average_ssim: the average SSIM of the model on the dataset
+    '''
+    model.eval()
+    total_ssim = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for i, mod in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
+            modif, actual = mod
+            modif = modif.to(device)
+            actual = actual.cpu().squeeze().numpy()
+
+            # Forward pass
+            outputs = model(modif)
+            outputs = outputs.cpu().squeeze().numpy()
+
+            ssim = structural_similarity(actual, outputs, data_range=1.0, full=True)
+            total_ssim += ssim[0]
+            num_batches += 1
+
+    average_ssim = total_ssim / num_batches
+    return average_ssim
+
 def generate_images(model, dataloader, n, device='cpu', path=None):
     '''
-    Picks n random images from a dataset and generates output images from a given model
+    Picks n random images from the dataloader and generates output images from a given model
 
     Args:
         model: the model to generate the images
@@ -249,7 +283,7 @@ def generate_images(model, dataloader, n, device='cpu', path=None):
     random_indices = random.sample(range(dataloader.batch_size), n)
 
     with torch.no_grad():
-        for i, data in enumerate(dataloader):
+        for i, data in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
             if i in random_indices:
                 img, _ = data
                 img = img.to(device)

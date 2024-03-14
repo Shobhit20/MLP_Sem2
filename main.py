@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms.functional as TF
+from torchvision import utils
 
 from models.AutoEncShallow import *
 from models.SkiD import *
@@ -20,7 +21,7 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = UNet(use_attention_gate=True)
+model = SkidNet()
 print("The number of parameters in the model: ", sum(p.numel() for p in model.parameters()))
 
 data_dir = 'data/'
@@ -35,7 +36,7 @@ print(f'Device: {device}\n')
 model.to(device)
 
 # Define the loss function and optimizer
-criterion = nn.functional.binary_cross_entropy_with_logits ##nn.MSELoss()
+criterion = nn.MSELoss() # nn.functional.binary_cross_entropy_with_logits
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training the autoencoder
@@ -58,7 +59,7 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'saved_models/testing.pth')
+			torch.save(model.state_dict(), 'final/SkidNet_2.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
@@ -66,8 +67,8 @@ if to_train:
 	# torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 # Load the model and test the autoencoder on test set
-model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('saved_models/testing.pth'))
+model = SkidNet()
+model.load_state_dict(torch.load('final/SkidNet_2.pth'))
 model.to(device)
 print('Model Loaded\n')
 
@@ -81,8 +82,14 @@ print(f'Calculating PSNR of Model:')
 psnr = PSNR(model, test_loader, device)
 print(f'PSNR on Test: {psnr:.4f}\n')
 
+# SSIM of Model
+print(f'Calculating SSIM of Model:')
+psnr = SSIM(model, test_loader, device)
+print(f'SSIM on Test: {psnr:.4f}\n')
+
 # Generate output for random images
 n = 5
+print(f'Generating output for random images:')
 output_images = generate_images(model, test_loader, n, device, path=None)
 print('Images Generated')
 

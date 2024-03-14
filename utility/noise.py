@@ -55,18 +55,19 @@ def add_salt_and_pepper_noise(image, salt_prob=0.05, pepper_prob=0.05):
     '''
     # Creating a Gaussian Mask
     size = image.size()
+    img = image.clone().detach()
     gaussian = gaussian_mask(size[-1], std=size[-1]//4)
     mask = generate_binary_mask_from_gaussian(gaussian)
     
     # Add salt noise to the image
     salt_mask = torch.rand(image.size())  < salt_prob
     salt_mask = salt_mask & mask
-    image[salt_mask] = 1.0
+    img[salt_mask] = 1.0
     
     # Add pepper noise to the image
     pepper_mask = torch.rand(image.size()) < pepper_prob
     pepper_mask = pepper_mask & mask
-    image[pepper_mask] = 0.0
+    img[pepper_mask] = 0.0
 
     return image
 
