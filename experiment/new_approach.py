@@ -24,8 +24,8 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = UNet(use_attention_gate=True)
-# model.load_state_dict(torch.load('experiment/bUnet-MSE.pth'))
+model = SkidNet()
+model.load_state_dict(torch.load('final/new_SkidNet.pth'))
 
 data_dir = 'data/'
 batch_size = 32
@@ -46,8 +46,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train Model
 check_loss = 999
-to_train = 0
-num_epochs = 75
+to_train = 1
+num_epochs = 5
 if to_train:
 	for epoch in range(num_epochs):
 		start = time.time()
@@ -65,14 +65,14 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'final/Unet_2.pth')
+			torch.save(model.state_dict(), 'final/new_SkidNet.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 		
 # Load the model and test the autoencoder on test set
-model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('final/Unet_2.pth'))
+model = SkidNet()
+model.load_state_dict(torch.load('final/new_SkidNet.pth'))
 model.to(device)
 print('Model Loaded\n')
 
