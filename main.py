@@ -21,12 +21,12 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = SkidNet()
+model = UNet(use_attention_gate=True)
 print("The number of parameters in the model: ", sum(p.numel() for p in model.parameters()))
 
 data_dir = 'data/'
 batch_size = 32
-train_loader, test_loader = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
+train_loader, val_loader, test_loader = loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=True)
 print('Data Loading Complete!')
 # showImages(train_loader, 5)
 
@@ -46,7 +46,12 @@ num_epochs = 10
 if to_train:
 	for epoch in range(num_epochs):
 		start = time.time()
-		for i, mod in enumerate(tqdm.tqdm(train_loader, total = len(train_loader))):
+		total_train_loss, total_psnr, total_val_loss = 0.0, 0.0, 0.0
+		
+		
+		# Training phase
+		model.train()
+		for i, mod in enumerate(tqdm.tqdm(train_loader, total=len(train_loader))):
 			modif, actual = mod
 			optimizer.zero_grad()
 
@@ -55,20 +60,27 @@ if to_train:
 
 			loss.backward()
 			optimizer.step()
+			
+			total_train_loss += loss.item()
 
-		if loss.item() < check_loss:
-			check_loss = loss.item()
-			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'final/SkidNet_3.pth')
+		avg_train_loss = total_train_loss / len(train_loader)
+		
+		avg_val_loss, psnr = PSNR(model, test_loader, device, loss_report=True, loss_criterion=criterion)
+		_, ssim = SSIM(model, test_loader, device, loss_report=True, loss_criterion=criterion)
+		# Save model if validation loss decreases
+		if avg_val_loss < check_loss:
+			check_loss = avg_val_loss
+			print('Saving New Best Model')
+			torch.save(model.state_dict(), 'final/Unet_new.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
-		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
+		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Train Loss: {avg_train_loss}  |  Val Loss: {avg_val_loss}  |  Val PSNR: {psnr}  |  Val SSIM: {ssim}\n')
 
 	# torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 # Load the model and test the autoencoder on test set
-model = SkidNet()
-model.load_state_dict(torch.load('final/SkidNet_3.pth'))
+model = UNet(use_attention_gate=True)
+model.load_state_dict(torch.load('final/SkidNet_2.pth'))
 model.to(device)
 print('Model Loaded\n')
 
