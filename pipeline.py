@@ -38,13 +38,34 @@ print(f'Device: {device}\n')
 
 # Initialize the models
 model1 = SkidNet()
-model1.load_state_dict(torch.load('final/SkidNet_2.pth'))
+model1.load_state_dict(torch.load('final/SkidNet_3.pth'))
 model1.to(device)
 
 model2 = UNet(use_attention_gate=True)
-model2.load_state_dict(torch.load('final/Unet_2.pth'))
+model2.load_state_dict(torch.load('final/Unet_3.pth'))
 model2.to(device)
 
+# ----------------- Calculating the loss of the pipeline ---------------- #
+print('Calculating the loss of the pipeline:')
+total_loss = 0.0
+num_batches = 0
+criterion = nn.MSELoss()
+with torch.no_grad():
+    for i, (real, mod) in enumerate(tqdm.tqdm(zip(test_original, test_loader), total=len(test_loader))):
+        actual, _ = real
+        modif, _ = mod
+        modif = modif.to(device)
+
+        # Forward pass
+        outputs = model1(modif)
+        outputs = model2(outputs)
+
+        # Calculate reconstruction loss (MSE)
+        loss = criterion(outputs, actual)
+
+        total_loss += loss.item()
+        num_batches += 1
+print(f'Average Loss: {total_loss / num_batches}\n')
 
 # ------------------ Calculating PSNR for the Pipeline ------------------ #
 print('Calculating PSNR for the Pipeline:')
@@ -74,7 +95,7 @@ print(f'Average PSNR: {total_psnr / num_batches:.4f}\n')
 
 
 # ------------------ Calculating SSIM for the pipeline ------------------ #
-print('Calculating PSNR for the Pipeline:')
+print('Calculating SSIM for the Pipeline:')
 total_ssim = 0.0
 num_batches = 0
 with torch.no_grad():
@@ -94,7 +115,6 @@ with torch.no_grad():
             ssim = structural_similarity(actual[j], output[j], data_range=1.0, full=True)
             total_ssim += ssim[0]
             num_batches += 1
-
 print(f'Average SSIM of the Model: {total_ssim / num_batches}\n')
 
 
@@ -120,7 +140,6 @@ with torch.no_grad():
             original_images.append(modif[0])
             generated_images.append(output[0])
             actual_images.append(actual[0])
-
 print(f'Sample Images Selected {random_indices}')
 
 

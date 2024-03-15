@@ -69,7 +69,7 @@ def add_salt_and_pepper_noise(image, salt_prob=0.05, pepper_prob=0.05):
     pepper_mask = pepper_mask & mask
     img[pepper_mask] = 0.0
 
-    return image
+    return img
 
 
 def add_speckle_noise(image, mean=0, std=0.1):

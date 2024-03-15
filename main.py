@@ -59,7 +59,7 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'final/SkidNet_2.pth')
+			torch.save(model.state_dict(), 'final/SkidNet_3.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
@@ -68,24 +68,24 @@ if to_train:
 
 # Load the model and test the autoencoder on test set
 model = SkidNet()
-model.load_state_dict(torch.load('final/SkidNet_2.pth'))
+model.load_state_dict(torch.load('final/SkidNet_3.pth'))
 model.to(device)
 print('Model Loaded\n')
 
 # Evaluate the model
 print(f'Evaluating the Model:')
 test_loss = evaluate_model(model, test_loader, device)
-print(f'Test loss: {test_loss:.4f}\n')
+print(f'Test loss: {test_loss}\n')
 
 # PSNR of Model
 print(f'Calculating PSNR of Model:')
 psnr = PSNR(model, test_loader, device)
-print(f'PSNR on Test: {psnr:.4f}\n')
+print(f'PSNR on Test: {psnr}\n')
 
 # SSIM of Model
 print(f'Calculating SSIM of Model:')
 psnr = SSIM(model, test_loader, device)
-print(f'SSIM on Test: {psnr:.4f}\n')
+print(f'SSIM on Test: {psnr}\n')
 
 # Generate output for random images
 n = 5

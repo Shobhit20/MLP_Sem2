@@ -31,7 +31,7 @@ print(f'Device: {device}\n')
 
 # Load the model and test the autoencoder on test set
 model = SkidNet()
-model.load_state_dict(torch.load('final/SkidNet_2.pth'))
+model.load_state_dict(torch.load('final/SkidNet_3.pth'))
 model.to(device)
 print('Model Loaded\n')
 
@@ -50,6 +50,6 @@ for i, mod in enumerate(tqdm.tqdm(train_loader, total = len(train_loader))):
         generated_image = output[k]
         generated_image = (generated_image - generated_image.min()) / (generated_image.max() - generated_image.min())
 
-        utils.save_image(actual_image, f"new_data_og2/{counter}.png")
-        utils.save_image(generated_image, f"new_data2/{counter}.png")
+        utils.save_image(actual_image, f"Skid_MSE_og2/{counter}.png")
+        utils.save_image(generated_image, f"Skid_MSE2/{counter}.png")
         counter += 1

@@ -24,13 +24,13 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = SkidNet()
-model.load_state_dict(torch.load('final/new_SkidNet.pth'))
+model = UNet(use_attention_gate=True)
+# model.load_state_dict(torch.load('final/Unet_3.pth'))
 
 data_dir = 'data/'
 batch_size = 32
-mid_train_loader, mid_test_loader = loadData('Skid_MSE', batch_size, test_size=0.2, color='gray', noise=False)
-mid_train_original, mid_test_original = loadData('Skid_MSE_og', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_loader, mid_test_loader = loadData('Skid_MSE2', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_original, mid_test_original = loadData('Skid_MSE_og2', batch_size, test_size=0.2, color='gray', noise=False)
 print('Data Loading Complete!')
 # showImages(mid_train_loader, 5)
 # showImages(mid_train_original, 5)
@@ -46,8 +46,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train Model
 check_loss = 999
-to_train = 1
-num_epochs = 5
+to_train = 0
+num_epochs = 50
 if to_train:
 	for epoch in range(num_epochs):
 		start = time.time()
@@ -65,31 +65,31 @@ if to_train:
 		if loss.item() < check_loss:
 			check_loss = loss.item()
 			print(f'Saving New Best Model')
-			torch.save(model.state_dict(), 'final/new_SkidNet.pth')
+			torch.save(model.state_dict(), 'final/Unet_3.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Loss: {loss.item()}\n')
 		
 # Load the model and test the autoencoder on test set
-model = SkidNet()
-model.load_state_dict(torch.load('final/new_SkidNet.pth'))
+model = UNet(use_attention_gate=True)
+model.load_state_dict(torch.load('final/Unet_3.pth'))
 model.to(device)
 print('Model Loaded\n')
 
 # Evaluate the model
 print(f'Evaluating the Model:')
 test_loss = evaluate_model_pipeline(model, mid_test_original, mid_test_loader, device)
-print(f'Test loss: {test_loss:.4f}\n')
+print(f'Test loss: {test_loss}\n')
 
 # PSNR of Model
 print(f'Calculating PSNR of Model:')
 psnr = PSNR_pipeline(model, mid_test_original, mid_test_loader, device)
-print(f'PSNR on Test: {psnr:.4f}\n')
+print(f'PSNR on Test: {psnr}\n')
 
 # SSIM of Model
 print(f'Calculating SSIM of Model:')
 psnr = SSIM_pipeline(model, mid_test_original, mid_test_loader, device)
-print(f'SSIM on Test: {psnr:.4f}\n')
+print(f'SSIM on Test: {psnr}\n')
 
 # Generate output for random images
 n = 5
