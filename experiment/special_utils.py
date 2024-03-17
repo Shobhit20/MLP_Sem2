@@ -107,18 +107,21 @@ def loadData(data_dir, batch_size, test_size=0.2, color='gray', noise=False):
         image_path = os.path.join(data_dir, image_name)
         data.append(image_path)
 
-    data_train, data_test = train_test_split(data, test_size=test_size, random_state=42)
+    data_train, data_rem = train_test_split(data, test_size=test_size, random_state=42)
+    data_val, data_test = train_test_split(data_rem, test_size=0.5, random_state=42)
 
     device = getDevice()
 
     # ---------------------- Artificially Noised Images --------------------- #
     train_dataset = AutoencoderDataset(data_train, device=device, color=color, transform=transform, transform_noise=transform_noise)
+    val_dataset = AutoencoderDataset(data_val, device=device, color=color, transform=transform, transform_noise=transform_noise)
     test_dataset = AutoencoderDataset(data_test, device=device, color=color, transform=transform, transform_noise=transform_noise)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
-    return train_loader, test_loader
+    return train_loader, val_loader, test_loader
 
 def showImages(dataloader, num_images=5):
     '''

@@ -29,8 +29,8 @@ model = UNet(use_attention_gate=True)
 
 data_dir = 'data/'
 batch_size = 32
-mid_train_loader, mid_test_loader = loadData('Skid_MSE2', batch_size, test_size=0.2, color='gray', noise=False)
-mid_train_original, mid_test_original = loadData('Skid_MSE_og2', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_loader, mid_val_loader, mid_test_loader = loadData('Skid_MSE2', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_original, mid_val_original, mid_test_original = loadData('Skid_MSE_og2', batch_size, test_size=0.2, color='gray', noise=False)
 print('Data Loading Complete!')
 # showImages(mid_train_loader, 5)
 # showImages(mid_train_original, 5)

@@ -25,8 +25,8 @@ from models.SuperMRI import *
 
 # --------------------------- Reading the Data -------------------------- #
 batch_size = 16
-train_loader, test_loader = loadData('data', batch_size, test_size=0.05, color='gray', noise=True)
-train_original, test_original = loadData('data', batch_size, test_size=0.05, color='gray', noise=False)
+train_loader, val_loader, test_loader = loadData('data', batch_size, test_size=0.05, color='gray', noise=True)
+train_original, val_orginal, test_original = loadData('data', batch_size, test_size=0.05, color='gray', noise=False)
 print('Data Loading Complete!')
 # showImages(train_loader, 5)
 # showImages(train_original, 5)
