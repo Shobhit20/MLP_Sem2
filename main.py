@@ -21,7 +21,7 @@ from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
 # Initialize the autoencoder
-model = UNet(use_attention_gate=True)
+model = SkidNet()
 print("The number of parameters in the model: ", sum(p.numel() for p in model.parameters()))
 
 data_dir = 'data/'
@@ -71,7 +71,7 @@ if to_train:
 		if avg_val_loss < check_loss:
 			check_loss = avg_val_loss
 			print('Saving New Best Model')
-			torch.save(model.state_dict(), 'final/Unet_new.pth')
+			torch.save(model.state_dict(), 'final/SkidNet_3.pth')
 
 		print(f'Time taken for epoch: {time.time() - start}')
 		print(f'Epoch [{epoch + 1}/{num_epochs}]  |  Train Loss: {avg_train_loss}  |  Val Loss: {avg_val_loss}  |  Val PSNR: {psnr}  |  Val SSIM: {ssim}\n')
@@ -79,25 +79,28 @@ if to_train:
 	# torch.save(model.state_dict(), 'saved_models/testing.pth')
 
 # Load the model and test the autoencoder on test set
-model = UNet(use_attention_gate=True)
-model.load_state_dict(torch.load('final/SkidNet_2.pth'))
+model = SkidNet()
+model.load_state_dict(torch.load('final/SkidNet_3.pth'))
 model.to(device)
 print('Model Loaded\n')
 
 # Evaluate the model
 print(f'Evaluating the Model:')
+val_loss = evaluate_model(model, val_loader, device)
 test_loss = evaluate_model(model, test_loader, device)
-print(f'Test loss: {test_loss}\n')
+print(f'Val Loss: {val_loss} | Test loss: {test_loss}\n')
 
 # PSNR of Model
 print(f'Calculating PSNR of Model:')
+val_psnr = PSNR(model, val_loader, device)
 psnr = PSNR(model, test_loader, device)
-print(f'PSNR on Test: {psnr}\n')
+print(f'Val PSNR: {val_psnr} | Test PSNR: {psnr}\n')
 
 # SSIM of Model
 print(f'Calculating SSIM of Model:')
+val_ssim = SSIM(model, val_loader, device)
 psnr = SSIM(model, test_loader, device)
-print(f'SSIM on Test: {psnr}\n')
+print(f'Val SSIM: {val_ssim} | Test SSIM: {psnr}\n')
 
 # Generate output for random images
 n = 5
