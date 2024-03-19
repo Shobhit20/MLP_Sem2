@@ -298,28 +298,30 @@ def generate_images(model, dataloader, n, device='cpu', path=None):
 
     with torch.no_grad():
         for i, data in enumerate(tqdm.tqdm(dataloader, total = len(dataloader))):
-            if i in random_indices:
-                img, _ = data
-                img = img.to(device)
-                output = model(img)
-                original_images.append(img[0])
-                generated_images.append(output[0])
+            img, _ = data
+            img = img.to(device)
+            output = model(img)
+            original_images.append(img[0])
+            generated_images.append(output[0])
     print(f'Sample Images Selected {random_indices}')
 
+    k = 0
     fig, axes = plt.subplots(2, n, figsize=(3 * n, 8))
-    for i in range(n):
-        input_image = original_images[i].cpu().squeeze()
-        output_image = generated_images[i].cpu().squeeze()
+    for i in range(dataloader.batch_size):
+        if i in random_indices:
+            input_image = original_images[k].cpu().squeeze()
+            output_image = generated_images[k].cpu().squeeze()
 
-        if len(input_image.shape) == 2:
-            axes[0, i].imshow(input_image, cmap='gray')
-            axes[1, i].imshow(output_image, cmap='gray')
-        else:
-            axes[0, i].imshow(input_image.permute(1, 2, 0))
-            axes[1, i].imshow(output_image.permute(1, 2, 0))
+            if len(input_image.shape) == 2:
+                axes[0, k].imshow(input_image, cmap='gray')
+                axes[1, k].imshow(output_image, cmap='gray')
+            else:
+                axes[0, k].imshow(input_image.permute(1, 2, 0))
+                axes[1, k].imshow(output_image.permute(1, 2, 0))
 
-        axes[0, i].set_title('Input Image'); axes[0, i].axis('off')
-        axes[1, i].set_title('Output Image'); axes[1, i].axis('off')
+            axes[0, k].set_title('Input Image'); axes[0, k].axis('off')
+            axes[1, k].set_title('Output Image'); axes[1, k].axis('off')
+            k += 1
     
     if path:
         plt.savefig(f'generated_images/{path}.png')

@@ -126,46 +126,48 @@ random_indices = random.sample(range(batch_size), n)
 
 with torch.no_grad():
     for i, (real, mod) in enumerate(tqdm.tqdm(zip(test_original, test_loader), total=len(test_loader))):
-        if i in random_indices:
-            actual, _ = real
-            modif, _ = mod
-            modif = modif.to(device)
+        actual, _ = real
+        modif, _ = mod
+        modif = modif.to(device)
 
-            # Forward Pass
-            output = model1(modif)
-            intermediate_images.append(output[0])
+        # Forward Pass
+        output = model1(modif)
+        intermediate_images.append(output[0])
 
-            output = model2(output)
+        output = model2(output)
 
-            original_images.append(modif[0])
-            generated_images.append(output[0])
-            actual_images.append(actual[0])
+        original_images.append(modif[0])
+        generated_images.append(output[0])
+        actual_images.append(actual[0])
 print(f'Sample Images Selected {random_indices}')
 
 
 # --------------------- Plotting the selected images -------------------- #
+k = 0
 fig, axes = plt.subplots(4, n, figsize=(3 * n, 8))
-for i in range(n):
-    input_image = original_images[i].cpu().squeeze()
-    intermediate_image = intermediate_images[i].cpu().squeeze()
-    output_image = generated_images[i].cpu().squeeze()
-    actual_image = actual_images[i].cpu().squeeze()
+for i in range(batch_size):
+    if i in random_indices:
+        input_image = original_images[k].cpu().squeeze()
+        intermediate_image = intermediate_images[k].cpu().squeeze()
+        output_image = generated_images[k].cpu().squeeze()
+        actual_image = actual_images[k].cpu().squeeze()
 
-    if len(input_image.shape) == 2:
-        axes[0, i].imshow(input_image, cmap='gray')
-        axes[1, i].imshow(intermediate_image, cmap='gray')
-        axes[2, i].imshow(output_image, cmap='gray')
-        axes[3, i].imshow(actual_image, cmap='gray')
-    else:
-        axes[0, i].imshow(input_image.permute(1, 2, 0))
-        axes[1, i].imshow(intermediate_image.permute(1, 2, 0))
-        axes[2, i].imshow(output_image.permute(1, 2, 0))
-        axes[3, i].imshow(actual_image.permute(1, 2, 0))
+        if len(input_image.shape) == 2:
+            axes[0, k].imshow(input_image, cmap='gray')
+            axes[1, k].imshow(output_image, cmap='gray')
+            axes[2, k].imshow(intermediate_image, cmap='gray')
+            axes[3, k].imshow(actual_image, cmap='gray')
+        else:
+            axes[0, k].imshow(input_image.permute(1, 2, 0))
+            axes[1, k].imshow(intermediate_image.permute(1, 2, 0))
+            axes[2, k].imshow(output_image.permute(1, 2, 0))
+            axes[3, k].imshow(actual_image.permute(1, 2, 0))
 
-    axes[0, i].set_title('Input Image'); axes[0, i].axis('off')
-    axes[1, i].set_title('Intermediate Image'); axes[1, i].axis('off')
-    axes[2, i].set_title('Output Image'); axes[2, i].axis('off')
-    axes[3, i].set_title('Actual Image'); axes[3, i].axis('off')
+        axes[0, k].set_title('Input Image'); axes[0, k].axis('off')
+        axes[1, k].set_title('Intermediate Image'); axes[1, k].axis('off')
+        axes[2, k].set_title('Output Image'); axes[2, k].axis('off')
+        axes[3, k].set_title('Actual Image'); axes[3, k].axis('off')
+        k += 1
 
 path = None
 if path:

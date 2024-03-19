@@ -296,37 +296,39 @@ def generate_images_pipeline(model, original, dataloader, n, device='cpu', path=
 
     with torch.no_grad():
         for i, (real, mod) in enumerate(tqdm.tqdm(zip(original, dataloader), total=(len(original)))):
-            if i in random_indices:
-                actual, _ = real
-                modif, _ = mod
-                modif = modif.to(device)
+            actual, _ = real
+            modif, _ = mod
+            modif = modif.to(device)
 
-                # Forward Pass
-                output = model(modif)
+            # Forward Pass
+            output = model(modif)
 
-                original_images.append(modif[0])
-                generated_images.append(output[0])
-                actual_images.append(actual[0])
+            original_images.append(modif[0])
+            generated_images.append(output[0])
+            actual_images.append(actual[0])
     print(f'Sample Images Selected {random_indices}')
 
+    k = 0
     fig, axes = plt.subplots(3, n, figsize=(3 * n, 8))
-    for i in range(n):
-        input_image = original_images[i].cpu().squeeze()
-        output_image = generated_images[i].cpu().squeeze()
-        actual_image = actual_images[i].cpu().squeeze()
+    for i in range(dataloader.batch_size):
+        if i in random_indices:
+            input_image = original_images[k].cpu().squeeze()
+            output_image = generated_images[k].cpu().squeeze()
+            actual_image = actual_images[k].cpu().squeeze()
 
-        if len(input_image.shape) == 2:
-            axes[0, i].imshow(input_image, cmap='gray')
-            axes[1, i].imshow(output_image, cmap='gray')
-            axes[2, i].imshow(actual_image, cmap='gray')
-        else:
-            axes[0, i].imshow(input_image.permute(1, 2, 0))
-            axes[1, i].imshow(output_image.permute(1, 2, 0))
-            axes[2, i].imshow(actual_image.permute(1, 2, 0))
+            if len(input_image.shape) == 2:
+                axes[0, k].imshow(input_image, cmap='gray')
+                axes[1, k].imshow(output_image, cmap='gray')
+                axes[2, k].imshow(actual_image, cmap='gray')
+            else:
+                axes[0, k].imshow(input_image.permute(1, 2, 0))
+                axes[1, k].imshow(output_image.permute(1, 2, 0))
+                axes[2, k].imshow(actual_image.permute(1, 2, 0))
 
-        axes[0, i].set_title('Input Image'); axes[0, i].axis('off')
-        axes[1, i].set_title('Output Image'); axes[1, i].axis('off')
-        axes[2, i].set_title('Actual Image'); axes[2, i].axis('off')
+            axes[0, k].set_title('Input Image'); axes[0, k].axis('off')
+            axes[1, k].set_title('Output Image'); axes[1, k].axis('off')
+            axes[2, k].set_title('Actual Image'); axes[2, k].axis('off')
+            k += 1
     
     if path:
         plt.savefig(f'{path}.png')
