@@ -2,15 +2,11 @@ import time
 import random
 import tqdm
 import matplotlib.pyplot as plt
-import warnings
-warnings.filterwarnings("ignore")
-
+import os
 import sys
-sys.path.append('/Users/arthakhouri/Desktop/UoE/MLP Sem II/MLP_Sem2')
-
-from experiment.special_utils import *
+sys.path.append(os.path.normpath(os.getcwd() + os.sep + os.pardir))
+from utility.special_utils import *
 from utility.noise_functions import *
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -23,14 +19,18 @@ from models.SkiDwithSkip import *
 from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 
+import warnings
+warnings.filterwarnings("ignore")
+
+
 # Initialize the autoencoder
 model = UNet(use_attention_gate=True)
 # model.load_state_dict(torch.load('final/Unet_3.pth'))
 
 data_dir = 'data/'
 batch_size = 32
-mid_train_loader, mid_val_loader, mid_test_loader = loadData('Skid_MSE2', batch_size, test_size=0.2, color='gray', noise=False)
-mid_train_original, mid_val_original, mid_test_original = loadData('Skid_MSE_og2', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_loader, mid_val_loader, mid_test_loader = loadData('Skid_MSE', batch_size, test_size=0.2, color='gray', noise=False)
+mid_train_original, mid_val_original, mid_test_original = loadData('Skid_MSE_og', batch_size, test_size=0.2, color='gray', noise=False)
 print('Data Loading Complete!')
 # showImages(mid_train_loader, 5)
 # showImages(mid_train_original, 5)
