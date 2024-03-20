@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore")
 
 # from utility.utils import *
 from utility.noise_functions import *
-from experiment.special_utils import *
+from utility.special_utils import *
 
 import torch
 import torch.nn as nn
@@ -38,11 +38,11 @@ print(f'Device: {device}\n')
 
 # Initialize the models
 model1 = SkidNet()
-model1.load_state_dict(torch.load('final/SkidNet_3.pth'))
+model1.load_state_dict(torch.load('saved_models/SkidNet_3.pth'))
 model1.to(device)
 
 model2 = UNet(use_attention_gate=True)
-model2.load_state_dict(torch.load('final/Unet_3.pth'))
+model2.load_state_dict(torch.load('saved_models/Unet_3.pth'))
 model2.to(device)
 
 # ----------------- Calculating the loss of the pipeline ---------------- #
@@ -154,8 +154,8 @@ for i in range(batch_size):
 
         if len(input_image.shape) == 2:
             axes[0, k].imshow(input_image, cmap='gray')
-            axes[1, k].imshow(output_image, cmap='gray')
-            axes[2, k].imshow(intermediate_image, cmap='gray')
+            axes[1, k].imshow(intermediate_image, cmap='gray')
+            axes[2, k].imshow(output_image, cmap='gray')
             axes[3, k].imshow(actual_image, cmap='gray')
         else:
             axes[0, k].imshow(input_image.permute(1, 2, 0))
