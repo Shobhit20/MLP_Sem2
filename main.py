@@ -15,8 +15,6 @@ import torchvision.transforms.functional as TF
 from torchvision import utils
 
 from models.AutoEncShallow import *
-from models.SkiD import *
-from models.SkiDwithSkip import *
 from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 

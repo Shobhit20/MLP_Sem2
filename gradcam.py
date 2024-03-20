@@ -1,7 +1,4 @@
-
 from models.SuperMRI import *
-from models.SkiD import *
-from models.SkiDwithSkip import *
 from models.SkiDwithSkipUnet import *
 from models.SuperMRI import *
 import torchvision
