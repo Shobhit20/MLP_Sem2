@@ -20,9 +20,9 @@ class SaveFeatures():
 
 train_loader, val_loader, test_loader = loadData("data/", 1, test_size=0.5, color='gray', noise=True)
 
-# Load model 
+# ------------------------------ Load model ----------------------------- #
 model = UNet(use_attention_gate=True, max_blocks=6)
-model.load_state_dict(torch.load('final/Unet_2.pth'))
+model.load_state_dict(torch.load('saved_models/Unet_3.pth'))
 model.eval()
 
 # Evaluate model 
@@ -38,13 +38,13 @@ with torch.no_grad():
         break
 
 
-# Attention gate output
+# ------------------------ Attention gate output ------------------------ #
 final_conv_layer = model.up_blocks[1].attention_gate.norm
 activated_features = SaveFeatures(final_conv_layer)
 
 denoised_img = model(img)
 
-# Calculate gradients
+# ------------------------- Calculate gradients ------------------------- #
 model.zero_grad()
 criterion = nn.MSELoss()
 loss = criterion(denoised_img, original_images[0].cpu().squeeze())
